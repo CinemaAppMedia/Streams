@@ -1,4 +1,4 @@
-var Streams = ["Stream 1", "Stream 2", "Stream 3", "Stream 4"]
+var Streams = ["Stream 1", "Stream 2", "Stream 3"]
 
 function Stream1(IMDBID, Season, Episode) {
     let Params
@@ -47,37 +47,6 @@ function Stream3(IMDBID, Season, Episode) {
     return [VideoURL]
 }
 
-function Stream4(IMDBID, Season, Episode) {
-    let Params
-    if (Season != null && Episode != null) {
-        Params = `show/${IMDBID}/${String(Season).padStart(2, '0')}-${String(Episode).padStart(2, '0')}`
-    } else {
-        Params = `movie/${IMDBID}`
-    }
-    let TokenCode = MatchText(`https://gomo.to/${Params}`, "var tc = '(.*?)'", true)[0]
-    if (TokenCode == null) return []
-    let Response = DataToString(URLRequest("https://gomo.to/decoding_v3.php", {"X-Token": TokenCode.substring(4, 27).split('').reverse().join('') + "27448069", "Content-Type": "application/x-www-form-urlencoded"}, StringToData(`tokenCode=${TokenCode}`)))
-    let DoodStreamURL = null
-    try {
-        let Parsed = JSON.parse(Response)
-        if (Array.isArray(Parsed) && Parsed.every(Item => typeof Item === 'string')) {
-            DoodStreamURL = Parsed.find(Item => Item.includes("dood"))
-        }
-    } catch {
-        DoodStreamURL = null
-    }
-    if (DoodStreamURL == null) return []
-    let DoodStreamID = DoodStreamURL.split('/').filter(Boolean).pop()
-    if (DoodStreamID == null) return []
-    let DownloadURL = MatchText(`https://d000d.com/d/${DoodStreamID}`, "<a href=\"/download/(.*?)\"", true)[0]
-    if (DownloadURL == null) return []
-    millis(500)
-    let MP4URL = MatchText(FetchHTML(`https://d000d.com/download/${DownloadURL}`, `https://d000d.com/d/${DoodStreamID}`, HTML => HTML.includes("Download file")), "<a href=\"(.*?)\" class=\"btn btn-primary d-flex align-items-center justify-content-between\">", false)[0]
-    if (MP4URL == null) return []
-    return [MP4URL, `https://d000d.com/d/${DoodStreamID}`]
-}
-
-// Useful functions
 function GetTMDBID(IMDBID, IsShow) {
     let Results = JSON.parse(DataToString(URLRequest(`https://api.themoviedb.org/3/find/${IMDBID}?api_key=b09fa5a94c26c11d6773f3ef07829cfe&external_source=imdb_id`)))[`${IsShow ? "tv" : "movie"}_results`]
     return Results?.length > 0 ? Results[0].id : null
@@ -89,10 +58,4 @@ function FetchHTML(URLString, Referer = null, Condition) {
     while (!Condition(HTML)) HTML = WebViewRunJS("document.documentElement.outerHTML")
     WebViewReset()
     return HTML
-}
-
-function millis(ms) {
-    var t1 = Date.now()
-    while (Date.now() - t1 < ms) {
-    }
 }
