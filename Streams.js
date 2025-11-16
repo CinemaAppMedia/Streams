@@ -36,15 +36,17 @@ function Stream3(IMDBID, Season, Episode) {
     if (TMDBID == null) return []
     let Params
     if (Season != null && Episode != null) {
-        Params = `tv/${TMDBID}/${Season}/${Episode}`
+        Params = `mediaType=tv&episodeId=${Episode}&seasonId=${Season}&tmdbId=${TMDBID}`
     } else {
-        Params = `movie/${TMDBID}`
+        Params = `mediaType=movie&tmdbId=${TMDBID}`
     }
-    WebViewLoad(`https://player.vidsrc.co/embed/${Params}?server=1`)
-    var VideoURL = ""
-    while (VideoURL == "") VideoURL = WebViewRunJS("document.querySelector('video')?.src;")
-    WebViewReset()
-    return [VideoURL]
+    let Encrypted = DataToString(URLRequest(`https://api.videasy.net/myflixerzupcloud/sources-with-title?${Params}`))
+    let Decrypted = DataToString(URLRequest("https://enc-dec.app/api/dec-videasy", {"Content-Type": "application/json"}, StringToData(`{\"text\": \"${Encrypted}\", \"id\": \"${TMDBID}\"}`)))
+    let Result = JSON.parse(Decrypted).result
+    if (Result == null) return []
+    let Sources = Result.sources
+    if (Sources.length < 1) return []
+    return [Sources[0].url, "https://player.videasy.net"]
 }
 
 function GetTMDBID(IMDBID, IsShow) {
